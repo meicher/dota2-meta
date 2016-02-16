@@ -2,30 +2,72 @@
 library(ggplot2)
 library(reshape)
 
-dota<-read.csv('dota2_6.86_metadata.csv',stringsAsFactors = FALSE)
-dota['skill_diff']<- dota['WIN_5.']-dota['WIN_Sub2k']
-dota['avgwin']<- (dota['WIN_Sub2k']+dota['WIN_2.3']+dota['WIN_3.4']+dota['WIN_4.5']+dota['WIN_5.'])/5
-#as expected, IO, CHEN, EARTHSPIRIT require the most skill to play, 16% increased win rate from sub2k to 5k + bracket
-#code heroes as Agi, Str, Int
-#Type (i.e. carry, nuker, disable)
+#SCRAPING DOTA BUFF FOR MOST CURRENT DATA------------------
+#USE THE OUTPUTTED DATAFRAME FOR ANALYSIS-----------------
+scrapedotabuff<- function(){
+  require(rvest)
+  crnt_dota<- read_html('http://www.dotabuff.com/heroes/meta')
+  
+  #get heroes
+  Hero<- html_nodes(crnt_dota,'.link-type-hero') 
+  Hero<- html_text(Hero)
+  
+  
+  #get sub2k data
+  a <- crnt_dota %>%
+    html_nodes('td.r-group-1') %>%
+    html_text()
+  #split to vectors
+  WIN_Sub2k<- a[seq(2,length(a),2)]
+  PICK_Sub2k<- a[seq(1,length(a),2)]
+  rm(a)
+  
+  #get 2-3k data
+  a <- crnt_dota %>%
+    html_nodes('td.r-group-2') %>%
+    html_text()
+  WIN_2.3<- a[seq(2,length(a),2)]
+  PICK_2.3<- a[seq(1,length(a),2)]
+  rm(a)
+  
+  #get 3-4
+  a <- crnt_dota %>%
+    html_nodes('td.r-group-3') %>%
+    html_text()
+  WIN_3.4<- a[seq(2,length(a),2)]
+  PICK_3.4<- a[seq(1,length(a),2)]
+  rm(a)
+  
+  #get 4-5
+  a <- crnt_dota %>%
+    html_nodes('td.r-group-4') %>%
+    html_text()
+  WIN_4.5<- a[seq(2,length(a),2)]
+  PICK_4.5<- a[seq(1,length(a),2)]
+  rm(a)
+  
+  #get 5+
+  a <- crnt_dota %>%
+    html_nodes('td.r-group-5') %>%
+    html_text()
+  WIN_5.<- a[seq(2,length(a),2)]
+  PICK_5.<- a[seq(1,length(a),2)]
+  rm(a)
+  
+  #convert str % fields to numeric decimals, then combine str hero column with cleaned int columns
+  #store in updated frame
+  updated<- cbind(PICK_Sub2k,WIN_Sub2k,PICK_2.3,WIN_2.3,PICK_3.4,WIN_3.4,PICK_4.5,WIN_4.5,PICK_5.,WIN_5.)
+  updated<- apply(updated,2,function(x) as.numeric(sub("%", "", x))/100)
+  updated<- cbind.data.frame(Hero,updated)
+  updated<- data.frame(updated,stringsAsFactors = FALSE)
+  return(updated) #END FUNCTION, OUTPUT FRAME----------------------------
+}
 
-#first two return numeric vectors. Single bracket (3rd line) will only return sublist-- still a dataframe of dim (1,x)
-#class(dota[,'WIN_5.'])
-#class(dota[['WIN_5.']])
-#class(dota['WIN_5.'])
 
-#find min/max values at certain levels
-#dota[dota['WIN_5.']== min(dota[['WIN_5.']])]
-
-#order the dataframe
-#attach(dota)
-#dota<- dota[order(WIN_3.4,WIN_4.5),]
-
-
-#avg of win columns are all around 49%, this is because lower win rate heroes get picked less, needs to be weighted for it to be 50%
 
 #fxn to plot a heroes win rate at each bracket
-heroplot<- function(hero,type='win'){
+#dota is the data frame
+heroplot<- function(dota,hero,type='win'){
   require(ggplot2)
   require(reshape)
   wins<- subset(dota,Hero==hero,select=c(3,5,7,9,11))
@@ -52,9 +94,6 @@ heroplot<- function(hero,type='win'){
 }
 
 
-
-group <- aggregate(dota[,2:11],by=list(dota$Attribute),FUN=mean)
-
 attributeplot<- function(){
 melted<- melt(group[,c(1,3,5,7,9,11)])
 ggplot(melted,aes(x=variable,y=value))+
@@ -70,6 +109,24 @@ ggplot(melted,aes(x=variable,y=value))+
 
 #OUTSTANDING ITEMS (FUNCTIONS TO CREATE)
 #1) function to plot a vector of heroes on same graph, as lines
-#2) function to webscrape dotabuff.com in order to keep data up to date on each use
+
+
+dota<-scrapedotabuff()
+dota['skill_diff']<- dota['WIN_5.']-dota['WIN_Sub2k']
+dota['avgwin']<- (dota['WIN_Sub2k']+dota['WIN_2.3']+dota['WIN_3.4']+dota['WIN_4.5']+dota['WIN_5.'])/5
+#produce data.frame = dota, for analysis and plotting
+
+
+
+#THIS and attributeplot() will not work until I can implement on the fly hero:attribute mapping
+#group <- aggregate(dota[,2:11],by=list(dota$Attribute),FUN=mean)
+
+
+#find min/max values at certain levels
+#dota[dota['WIN_5.']== min(dota[['WIN_5.']])]
+
+#order the dataframe
+#attach(dota)
+#dota<- dota[order(WIN_3.4,WIN_4.5),]
 
 
