@@ -67,11 +67,11 @@ scrapedotabuff<- function(){
 
 #fxn to plot a heroes win rate at each bracket
 #dota is the data frame
-heroplot<- function(dota,hero,type='win'){
+heroplot<- function(hero,type='win',Dota=dota){
   require(ggplot2)
   require(reshape)
-  wins<- subset(dota,Hero==hero,select=c(3,5,7,9,11))
-  pick<- subset(dota,Hero==hero,select=c(2,4,6,8,10))
+  wins<- subset(Dota,Hero==hero,select=c(4,6,8,10,12))
+  pick<- subset(Dota,Hero==hero,select=c(3,5,7,9,11))
   wins<- melt(wins[,1:5])
   pick<- melt(pick[,1:5])
   if(type == 'win'){
@@ -104,22 +104,18 @@ ggplot(melted,aes(x=variable,y=value))+
 }
 #look at the colour codes in order to manually adjust them per attribute type
 #ggplot_build(ggplot(melted,aes(x=variable,y=value,group=2))+
-        #       geom_point(aes(colour=factor(Group.1)),size=4))$data
+#geom_point(aes(colour=factor(Group.1)),size=4))$data
 
-
-#OUTSTANDING ITEMS (FUNCTIONS TO CREATE)
-#1) function to plot a vector of heroes on same graph, as lines
 
 
 dota<-scrapedotabuff()
 dota['skill_diff']<- dota['WIN_5.']-dota['WIN_Sub2k']
 dota['avgwin']<- (dota['WIN_Sub2k']+dota['WIN_2.3']+dota['WIN_3.4']+dota['WIN_4.5']+dota['WIN_5.'])/5
+new<-read.csv('dota2_6.86_metadata.csv')
+dota<- merge(new,dota)
+group <- aggregate(dota[,3:14],by=list(dota$Attribute),FUN=mean)
 #produce data.frame = dota, for analysis and plotting
 
-
-
-#THIS and attributeplot() will not work until I can implement on the fly hero:attribute mapping
-#group <- aggregate(dota[,2:11],by=list(dota$Attribute),FUN=mean)
 
 
 #find min/max values at certain levels
@@ -130,3 +126,26 @@ dota['avgwin']<- (dota['WIN_Sub2k']+dota['WIN_2.3']+dota['WIN_3.4']+dota['WIN_4.
 #dota<- dota[order(WIN_3.4,WIN_4.5),]
 
 
+
+multiplot<- function(hero_vec,type='win',Dota=dota){
+  require(ggplot2)
+  require(reshape)
+  wins<- subset(Dota,Hero %in% hero_vec,select=c(1,4,6,8,10,12))
+  pick<- subset(Dota,Hero %in% hero_vec,select=c(1,3,5,7,9,11))
+  wins<- melt(wins[,1:6])
+  pick<- melt(pick[,1:6])
+  if(type == 'win'){
+  winplots<- ggplot(wins,aes(x=variable,y=value,group=Hero,colour=Hero)) + 
+    geom_line(size=1) +
+    geom_point(size=3,shape=21,fill='white')+
+    xlab('Ranked MMR Bracket')+
+    ylab('Pct Games Won')
+    return(winplots)}
+  else if(type == 'pick'){
+    pickplot<- ggplot(pick,aes(x=variable,y=value,group=Hero,colour=Hero)) + 
+      geom_line(size=1) +
+      geom_point(size=3,shape=21,fill='white')+
+      xlab('Ranked MMR Bracket')+
+      ylab('Pct Games Won')
+    return(pickplot)}
+}
