@@ -113,6 +113,7 @@ dota['skill_diff']<- dota['WIN_5.']-dota['WIN_Sub2k']
 dota['avgwin']<- (dota['WIN_Sub2k']+dota['WIN_2.3']+dota['WIN_3.4']+dota['WIN_4.5']+dota['WIN_5.'])/5
 new<-read.csv('dota2_6.86_metadata.csv')
 dota<- merge(new,dota)
+rm(new)
 group <- aggregate(dota[,3:14],by=list(dota$Attribute),FUN=mean)
 #produce data.frame = dota, for analysis and plotting
 
@@ -146,6 +147,6 @@ multiplot<- function(hero_vec,type='win',Dota=dota){
       geom_line(size=1) +
       geom_point(size=3,shape=21,fill='white')+
       xlab('Ranked MMR Bracket')+
-      ylab('Pct Games Won')
+      ylab('Pct Games Picked')
     return(pickplot)}
 }
